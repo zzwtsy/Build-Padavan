@@ -42,7 +42,7 @@ jobs:
     - name: Modify configs
       run: |
         cd /opt/rt-n56u/trunk
-        chmod +x $DIY
+        wget https://raw.githubusercontent.com/zzwtsy/Build-Padavan/master/diy.sh
         $GITHUB_WORKSPACE/$DIY
   
   #编译固件
