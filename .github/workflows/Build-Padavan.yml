@@ -42,6 +42,7 @@ jobs:
     - name: Modify configs
       run: |
         cd /opt/rt-n56u/trunk
+        chmod +x $DIY
         $GITHUB_WORKSPACE/$DIY
   
   #编译固件
