@@ -15,7 +15,8 @@ env:
   upload_cowtransfer: true #上传到奶牛快传
 
 jobs:
-  build: ubuntu-20.04
+  build: 
+    rus-on: ubuntu-20.04
 
   steps:
   - name: Checkout
