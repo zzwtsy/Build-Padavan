@@ -15,19 +15,20 @@ env:
   upload_cowtransfer: true #上传到奶牛快传
 
 jobs:
-  build: ubuntu-20.04
+  build: 
+    runs-on: ubuntu-20.04
 
-  steps:
-  - name: Checkout
-    uses: actions/checkout@master
-  - name: Initialization environment
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+    - name: Initialization environment
       env:
         DEBIAN_FRONTEND: noninteractive
-      run: |
-        sudo apt-get update
-        sudo apt-get -y install unzip libtool-bin curl cmake gperf gawk flex bison nano xxd fakeroot \
-        cpio git python-docutils gettext automake autopoint texinfo build-essential help2man \
-        pkg-config zlib1g-dev libgmp3-dev libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget
+    run: |
+      sudo apt-get update
+      sudo apt-get -y install unzip libtool-bin curl cmake gperf gawk flex bison nano xxd fakeroot \
+      cpio git python-docutils gettext automake autopoint texinfo build-essential help2man \
+      pkg-config zlib1g-dev libgmp3-dev libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget
   
   #初始化环境
   - name: Clone source code
@@ -63,36 +64,36 @@ jobs:
 
   #创建tag
   - name: Generate release tag
-      id: tag
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      run: |
-        echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
-        touch release.txt
-        echo "date +"%Y.%m.%d-%H%M"" >> release.txt
-        echo "::set-output name=status::success"
+    id: tag
+    if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+    run: |
+      echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
+      touch release.txt
+      echo "date +"%Y.%m.%d-%H%M"" >> release.txt
+      echo "::set-output name=status::success"
 
   #上传固件到release
   - name: Upload firmware to release
-      uses: softprops/action-gh-release@v1
-      if: steps.tag.outputs.status == 'success' && !cancelled()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.tag.outputs.release_tag }}
-        body_path: release.txt
-        files: /opt/images/*
+    uses: softprops/action-gh-release@v1
+    if: steps.tag.outputs.status == 'success' && !cancelled()
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      tag_name: ${{ steps.tag.outputs.release_tag }}
+      body_path: release.txt
+      files: /opt/images/*
 
   - name: Delete workflow runs
-      uses: GitRML/delete-workflow-runs@main
-      with:
-        retain_days: 1
-        keep_minimum_runs: 3
+    uses: GitRML/delete-workflow-runs@main
+    with:
+      retain_days: 1
+      keep_minimum_runs: 3
 
   - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@v0.1.0
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      with:
-        keep_latest: 2
-        delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: dev-drprasad/delete-older-releases@v0.1.0
+    if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+    with:
+      keep_latest: 2
+      delete_tags: true
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
