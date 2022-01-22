@@ -43,6 +43,7 @@ jobs:
       run: |
         cd /opt/rt-n56u/trunk
         wget https://raw.githubusercontent.com/zzwtsy/Build-Padavan/master/diy.sh
+        chmod +x $DIY
         $GITHUB_WORKSPACE/$DIY
   
   #编译固件
