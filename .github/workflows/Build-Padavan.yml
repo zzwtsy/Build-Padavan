@@ -11,9 +11,11 @@ env:
   REPO_URL: https://github.com/hanwckf/rt-n56u.git #源码地址
   TNAME: RM2100 #编译型号
   DIY: diy.sh
+  #上传固件到Release
   UPLOAD_RELEASE: true
-  upload_cowtransfer: true #上传到奶牛快传
-
+  #上传固件到奶牛快传
+  UPLOAD_COWTRANSFER: false
+  
 jobs:
   build: 
     runs-on: ubuntu-20.04
@@ -55,7 +57,7 @@ jobs:
   
   # 上传到奶牛快传
     - name: Upload images to CowTransfer
-      if: env.upload_cowtransfer == 'true' && success()
+      if: env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
       run: |
         curl -fsSL git.io/file-transfer | sh
         ./transfer cow --block 2621440 -s -p 64 --no-progress /opt/images/ 2>&1 | tee cowtransfer.log
