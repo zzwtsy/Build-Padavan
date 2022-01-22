@@ -50,12 +50,8 @@ jobs:
     - name: Compile the firmware
       run: |
         cd /opt/rt-n56u/trunk
-        if [ ! -f configs/templates/$TNAME.config ] ; then
-        echo "configs/templates/$TNAME.config not found "
-        exit 1
-        sudo ./clear_tree
-        sudo ./build_firmware_modify $TNAME
-        sudo mv -f images/*.trx /opt/images/${m}_$(date +%Y%m%d).trx
+        fakeroot ./build_firmware_modify $TNAME
+        sudo mv -f images/*.trx /opt/images/$TNAME_$(date +%Y%m%d).trx
   
   # 上传到奶牛快传
     - name: Upload images to CowTransfer
