@@ -1,0 +1,98 @@
+#修改TNAME: RM2100 为想要编译的固件
+name: Build Padavan
+
+on:
+  workflow_dispatch:
+  #定时编译
+  schedule:
+    - cron: 0 * * 1 1/3
+
+env:
+  REPO_URL: https://github.com/hanwckf/rt-n56u.git #源码地址
+  TNAME: RM2100 #编译型号
+  DIY: diy.sh
+  UPLOAD_RELEASE: true
+  upload_cowtransfer: true #上传到奶牛快传
+
+jobs:
+  build: ubuntu-20.04
+
+  steps:
+  - name: Checkout
+    uses: actions/checkout@master
+  - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install unzip libtool-bin curl cmake gperf gawk flex bison nano xxd fakeroot \
+        cpio git python-docutils gettext automake autopoint texinfo build-essential help2man \
+        pkg-config zlib1g-dev libgmp3-dev libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget
+  
+  #初始化环境
+  - name: Clone source code
+    run: |
+      git clone --depth=1 $REPO_URL /opt/rt-n56u
+      cd /opt/rt-n56u/toolchain-mipsel
+      sh dl_toolchain.sh
+      mkdir -p /opt/images/
+
+  #自定义修改
+  - name: Modify configs
+      cd /opt/rt-n56u/trunk
+      $GITHUB_WORKSPACE/$DIY
+  
+  #编译固件
+  - name: Compile the firmware
+    run: |
+      cd /opt/rt-n56u/trunk
+      if [ ! -f configs/templates/$TNAME.config ] ; then
+      echo "configs/templates/$TNAME.config not found "
+      exit 1
+      sudo ./clear_tree
+      sudo ./build_firmware_modify $TNAME
+      sudo mv -f images/*.trx /opt/images/${m}_$(date +%Y%m%d).trx
+  
+  # 上传到奶牛快传
+  - name: Upload images to CowTransfer
+    if: env.upload_cowtransfer == 'true' && success()
+    run: |
+      curl -fsSL git.io/file-transfer | sh
+      ./transfer cow --block 2621440 -s -p 64 --no-progress /opt/images/ 2>&1 | tee cowtransfer.log
+      echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
+
+  #创建tag
+  - name: Generate release tag
+      id: tag
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
+        touch release.txt
+        echo "date +"%Y.%m.%d-%H%M"" >> release.txt
+        echo "::set-output name=status::success"
+
+  #上传固件到release
+  - name: Upload firmware to release
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+        body_path: release.txt
+        files: /opt/images/*
+
+  - name: Delete workflow runs
+      uses: GitRML/delete-workflow-runs@main
+      with:
+        retain_days: 1
+        keep_minimum_runs: 3
+
+  - name: Remove old Releases
+      uses: dev-drprasad/delete-older-releases@v0.1.0
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      with:
+        keep_latest: 2
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
