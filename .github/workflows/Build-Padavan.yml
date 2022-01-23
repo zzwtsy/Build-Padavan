@@ -11,17 +11,19 @@ env:
   REPO_URL: https://github.com/hanwckf/rt-n56u.git #源码地址
   TNAME: RM2100 #编译型号
   DIY: diy.sh
+  #上传固件到Release
   UPLOAD_RELEASE: true
-  upload_cowtransfer: true #上传到奶牛快传
-
+  #上传固件到奶牛快传
+  UPLOAD_COWTRANSFER: false
+  
 jobs:
   build: 
-    rus-on: ubuntu-20.04
+    runs-on: ubuntu-20.04
 
-  steps:
-  - name: Checkout
-    uses: actions/checkout@master
-  - name: Initialization environment
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+    - name: Initialization environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
@@ -31,49 +33,48 @@ jobs:
         pkg-config zlib1g-dev libgmp3-dev libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget
   
   #初始化环境
-  - name: Clone source code
-    run: |
-      git clone --depth=1 $REPO_URL /opt/rt-n56u
-      cd /opt/rt-n56u/toolchain-mipsel
-      sh dl_toolchain.sh
-      mkdir -p /opt/images/
+    - name: Clone source code
+      run: |
+       git clone --depth=1 $REPO_URL /opt/rt-n56u
+       cd /opt/rt-n56u/toolchain-mipsel
+       sh dl_toolchain.sh
+       mkdir -p /opt/images/
 
   #自定义修改
-  - name: Modify configs
-      cd /opt/rt-n56u/trunk
-      $GITHUB_WORKSPACE/$DIY
+    - name: Modify configs
+      run: |
+        cd /opt/rt-n56u/trunk
+        wget https://raw.githubusercontent.com/zzwtsy/Build-Padavan/master/diy.sh
+        chmod +x $DIY
+        sh ./$DIY
   
   #编译固件
-  - name: Compile the firmware
-    run: |
-      cd /opt/rt-n56u/trunk
-      if [ ! -f configs/templates/$TNAME.config ] ; then
-      echo "configs/templates/$TNAME.config not found "
-      exit 1
-      sudo ./clear_tree
-      sudo ./build_firmware_modify $TNAME
-      sudo mv -f images/*.trx /opt/images/${m}_$(date +%Y%m%d).trx
+    - name: Compile the firmware
+      run: |
+        cd /opt/rt-n56u/trunk
+        fakeroot ./build_firmware_modify $TNAME
+        sudo mv -f images/*.trx /opt/images/${TNAME}_$(date +%Y%m%d).trx
   
   # 上传到奶牛快传
-  - name: Upload images to CowTransfer
-    if: env.upload_cowtransfer == 'true' && success()
-    run: |
-      curl -fsSL git.io/file-transfer | sh
-      ./transfer cow --block 2621440 -s -p 64 --no-progress /opt/images/ 2>&1 | tee cowtransfer.log
-      echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
+    - name: Upload images to CowTransfer
+      if: env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
+      run: |
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer cow --block 2621440 -s -p 64 --no-progress /opt/images/ 2>&1 | tee cowtransfer.log
+        echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
 
   #创建tag
-  - name: Generate release tag
+    - name: Generate release tag
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
         echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
         touch release.txt
-        echo "date +"%Y.%m.%d-%H%M"" >> release.txt
+        echo `date +"%Y.%m.%d-%H%M"` >> release.txt
         echo "::set-output name=status::success"
 
   #上传固件到release
-  - name: Upload firmware to release
+    - name: Upload firmware to release
       uses: softprops/action-gh-release@v1
       if: steps.tag.outputs.status == 'success' && !cancelled()
       env:
@@ -83,13 +84,13 @@ jobs:
         body_path: release.txt
         files: /opt/images/*
 
-  - name: Delete workflow runs
+    - name: Delete workflow runs
       uses: GitRML/delete-workflow-runs@main
       with:
         retain_days: 1
         keep_minimum_runs: 3
 
-  - name: Remove old Releases
+    - name: Remove old Releases
       uses: dev-drprasad/delete-older-releases@v0.1.0
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       with:
