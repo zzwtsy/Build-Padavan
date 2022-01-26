@@ -72,6 +72,7 @@ jobs:
         echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
         touch release.txt
         echo `date +"%Y.%m.%d-%H%M"` >> release.txt
+        echo $TNAME >> release.txt
         echo "::set-output name=status::success"
 
   #上传固件到release
