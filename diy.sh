@@ -1,6 +1,6 @@
 user_name="admin"                                   # 用户名
 user_password="admin"                               # 登录密码
-lan_ip="192.168.5.1"                                # LAN 地址 别写后面的
+lan_ip="192.168.5.1"                                # LAN 地址
 wlan_2g_ssid="@PHICOMM_02"                          # 2G 无线名称
 wlan_5g_ssid="@PHICOMM_02_5G"                       # 5G 无线名称
 wlan_2g_psk="Meng2.4GWIFI"                          # 2G WIFI密码最少8位 空白为不设置
