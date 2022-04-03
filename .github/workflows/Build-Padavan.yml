@@ -9,7 +9,7 @@ on:
 
 env:
   REPO_URL: https://github.com/hanwckf/rt-n56u.git #源码地址
-  TNAME: "RM2100 PSG1218"#编译型号
+  TNAME: "RM2100"#编译型号
   DIY: diy.sh
   #上传固件到Release
   UPLOAD_RELEASE: true
